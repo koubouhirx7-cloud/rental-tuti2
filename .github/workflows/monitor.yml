@@ -1,0 +1,35 @@
+name: Website Monitor
+
+on:
+  schedule:
+    # 15分おきに実行 (UTC表記)
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # 手動実行用
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # 状態ファイルを保存するために必要
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Run monitor
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python monitor.py
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add last_records.json
+          git commit -m "Update state [skip ci]" || echo "No changes to commit"
+          git push
