@@ -2,8 +2,8 @@ name: Website Monitor
 
 on:
   schedule:
-    # 15分おきに実行 (UTC表記)
-    - cron: '*/15 * * * *'
+    # 5分おきに実行 (UTC表記)
+    - cron: '*/5 * * * *'
   workflow_dispatch: # 手動実行用
 
 jobs:
