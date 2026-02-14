@@ -1,10 +1,12 @@
 name: Website Monitor
 
 on:
-  schedule:
-    # 5分おきに実行 (UTC表記)
-    - cron: '*/5 * * * *'
-  workflow_dispatch: # 手動実行用
+  # 外部cronサービス (cron-job.org) から5分ごとにトリガーされる
+  workflow_dispatch: # API経由・手動実行用
+
+concurrency:
+  group: monitor
+  cancel-in-progress: false
 
 jobs:
   monitor:
