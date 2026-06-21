@@ -9,8 +9,11 @@ from datetime import datetime, timedelta
 WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL")
 
 BIKE_IDS = [
-    3592, 3593, 3595, 3596, 3597, 3598, 3600, 3602, 3603, 3604, 
-    3605, 3606, 3607, 3608, 3657, 3665, 3666, 3667, 3668, 3669, 3670
+    3592, 3593, 3595, 3596, 3597, 3598, 3600, 3602, 3603, 3604,
+    3605, 3606, 3607, 3608, 3657, 3665, 3666, 3667, 3668, 3669, 3670,
+    # 観光協会の自転車（管理をハイランダーが代行。highlander.html のリストに準拠）
+    3579, 3580, 3581, 3582,
+    # 注: 3601 はコンソールでもコメントアウト＝対象外（富士商会の車体）
 ]
 STATE_FILE = "last_records.json"
 
@@ -125,6 +128,11 @@ def main():
         new_records = []
         fetch_errors = 0
 
+        # 既に履歴を把握済みの自転車IDの集合。
+        # 新しく BIKE_IDS に追加した自転車の「過去のレンタル履歴」を
+        # 新規扱いで大量通知してしまうのを防ぐために使う。
+        seen_bike_ids = set(key.split('_')[0] for key in last_ids)
+
         for bike_id in BIKE_IDS:
             history = fetch_history(bike_id)
             if not history and history != []: # Fetch failed
@@ -132,16 +140,19 @@ def main():
                 # print(f"Skipping update for bike {bike_id} due to fetch error.")
                 continue
 
+            # この自転車を過去に一度でも記録したことがあるか
+            bike_seen_before = str(bike_id) in seen_bike_ids
+
             for record in history:
                 # ユニークなキーを作成（bike_id + start_date + end_date）
                 record_key = f"{record.get('bike_id')}_{record.get('scheduled_start')}_{record.get('end_date')}"
                 current_ids.add(record_key)
-                
+
                 if record_key not in last_ids:
-                    if last_ids:  # 初回実行時は通知しない
+                    if last_ids and bike_seen_before:  # 既知の自転車の新規レコードだけ通知
                         new_records.append(record)
                     else:
-                        # 初回ロード時はログだけ出す
+                        # 初回ロード or 新規追加した自転車の過去履歴 → 通知せず記録だけ
                         pass
 
         # 重要な修正: 全ての取得に失敗した場合や、取得結果が0件だった場合に
